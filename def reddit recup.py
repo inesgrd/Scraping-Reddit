@@ -1,11 +1,15 @@
-#Fonction that scrap from reddit posts in one community the title link date votes comments ; user not available
-#indicate which community at the end 
-
+from inspect import Attribute
 import requests
 import urllib.request
 from bs4 import BeautifulSoup
 import time
 from pprint import pprint
+from minet.scrape.std import get_display_text
+
+## Fonction that scrap from reddit the 7th first posts in one community the title link date votes comments ; user not available
+
+#choose the community; has to be written as it would be in the url
+
 
 community = input("Choose a community on Reddit to scrap: ")
 
@@ -32,8 +36,8 @@ def recup_reddit(community):
             "link": link,
             "date": date,
             "votes": votes,
-            "comments": nbcom
-            }
+            "comments": comments
+        }
         posts.append(result)
     pprint(posts)
 recup_reddit(community)
