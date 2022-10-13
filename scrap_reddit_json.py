@@ -9,12 +9,11 @@ from datetime import datetime
 ## Scrap Reddit from json 
 
 community = input("Choose a community on Reddit to scrap: ")
-type = input("Choose a type of result between hot (popular) or new (latest) or top (trending): ")
 
 boucle = True
 mailurl = 'https://www.reddit.com/r/'
 after = ''
-url = 'https://www.reddit.com/r/'+community+'/'+type+'.json?limit=100'
+url = 'https://www.reddit.com/r/'+community+'/.json?limit=100'
 
 name_header = [
     "subreddit",
@@ -31,7 +30,7 @@ name_header = [
     "awards",
     "domain"]
 
-with open("scraping_reddit_"+community+"_"+type+".csv", "w") as f:
+with open("scraping_reddit_"+community+".csv", "w") as f:
     writer = csv.DictWriter(f, fieldnames=name_header)
     writer.writeheader()
 
