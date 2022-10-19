@@ -67,6 +67,7 @@ with open("search_posts_"+keyword+"_scraping_reddit.csv", "w") as f:
 
 ## POSTS search 
 
+#TO DO : 
 #Add a limit
 
 #Publication : ok
