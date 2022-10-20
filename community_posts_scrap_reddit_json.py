@@ -28,7 +28,7 @@ output_CSV_header = [
     "awards_post",
     "domain_link_joined"]
 
-with open("posts_"+community+"_scraping_reddit.csv".csv", "w") as f:
+with open("posts_"+community+"_scraping_reddit.csv.csv", "w") as f:
     writer = csv.DictWriter(f, fieldnames=output_CSV_header)
     writer.writeheader()
 
@@ -69,10 +69,6 @@ with open("posts_"+community+"_scraping_reddit.csv".csv", "w") as f:
 
 ## Notes for developping this script : ##
 
-#argparse library 
-#sys library
-#click library 
-
 
 ## Community 
 #select a community 
@@ -89,11 +85,3 @@ with open("posts_"+community+"_scraping_reddit.csv".csv", "w") as f:
 
 #Scraping all the posts from a community that contains 2 keywords stating with the most recent one 
 #'https://www.reddit.com/r/' + community + '/search.json?limit=100' + 'after' + '&q='+ keyword1 + '%20'+ keyword2 + '%20'+ keyword3 +'&restrict_sr=1&sr_nsfw=&sort=new'
-
-
-# Space : 51062
-#Terminal <scraping_reddit_space.csv cut -f4 -d',' | sort -u | wc -l
-# >>> 825
-#only 825 posts ?? 
-
-

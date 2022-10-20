@@ -60,19 +60,6 @@ with open("comments_"+user+"_scraping_reddit.csv", "w") as f:
 
 
 ## Author's comments
+
 #select an author -> need info 
-
-#karma? not in the j.son format :( => how to get it 
-
-#url.json changes /r in /user
-#'https://www.reddit.com/user/'+ user + '/comments.json?limit=100' + 'after' + &sort=new
-
-
-#got rid of author + subreddit_subscribers + domain
-#link_title = title of the post the author made or commented
-#body = (first) comment/text
-#link_url = link of the publication
-
-#Attention : got multiple times the same comments 
-
-#karma? not in the j.son format :( => how to get it 
+#karma? not in the j.son format :( => how to get it

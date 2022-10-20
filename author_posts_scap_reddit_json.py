@@ -65,19 +65,6 @@ with open("posts_"+user+"_scraping_reddit.csv", "w") as f:
 
 
 ## Author's posts
+
 #select an author -> need info 
-
-
-#got rid of author
-
-#url.json changes /r in /user
-#url dans la boucle
-#'https://www.reddit.com/user/' + user +'/submitted.json?limit=100' + 'after' + &sort=new
-
-#changes the name of the doc
-
-#karma? not in the j.son format :( => how to get it 
-
-
-
-
+#karma? not in the j.son format :( => how to get it

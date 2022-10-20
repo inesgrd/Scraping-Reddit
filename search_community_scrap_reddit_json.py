@@ -11,7 +11,7 @@ from datetime import datetime
 keyword = input("Choose a keyword on Reddit to scrap: ")
 
 after = ''
-url = f'https://www.reddit.com/search.json?limit=100{after}&q={keyword}&type=sr'
+url = f'https://www.reddit.com/search.json?limit=100&q={keyword}&type=sr'
 
 output_CSV_header = [
     "subreddit",
@@ -57,10 +57,10 @@ with open("search_community_"+keyword+"_scraping_reddit.csv", "w") as f:
 
 ## Reddit search 
 
+#TO DO : 
 #Add a limit
 
 #Publication : ok
 #Comments : does not work, still give the publication page info
 #Community : works, keyword related to the community (idk how it does that when not mentionned in the name nor the description)
 #User : get some users but not the same between reddit search and the .json one 
-

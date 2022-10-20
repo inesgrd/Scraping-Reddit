@@ -74,4 +74,3 @@ with open("search_posts_"+keyword+"_scraping_reddit.csv", "w") as f:
 #Comments : does not work, still give the publication page info
 #Community : works, keyword related to the community (idk how it does that when not mentionned in the name nor the description)
 #User : get some users but not the same between reddit search and the .json one 
-
