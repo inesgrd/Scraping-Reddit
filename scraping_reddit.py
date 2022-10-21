@@ -42,7 +42,7 @@ if args.community:
     "comments_post",
     "awards_post",
     "domain_link_joined"]
-    with open("posts_"+args.name+"_scraping_reddit.csv.csv", "w") as f:
+    with open("posts_"+args.name+"_scraping_reddit.csv", "w") as f:
         writer = csv.DictWriter(f, fieldnames=output_CSV_header)
         writer.writeheader()
         while True:
@@ -85,7 +85,8 @@ elif args.user:
             "subreddit_id",
             "subreddit_subscribers",
             "title_post",
-            "link_post",
+            "link_post"
+            "author_post",
             "date_utc",
             "text_post",
             "link_joined",
@@ -110,6 +111,7 @@ elif args.user:
                         "subreddit_subscribers": child['subreddit_subscribers'],
                         "title_post": child['title'],
                         "link_post": 'https://www.reddit.com{permalink}'.format(permalink = child["permalink"]),
+                        "author_post": child['author'],
                         "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat(),
                         "text_post": child['selftext'],
                         "link_joined": child['url'],
@@ -130,6 +132,7 @@ elif args.user:
             "subreddit_id",
             "title_post",
             "link_post",
+            "author_post",
             "date_utc",
             "text_com",
             "link_joined",
@@ -152,6 +155,7 @@ elif args.user:
                         "subreddit_id": child['subreddit_id'],
                         "title_post": child['link_title'],
                         "link_post": 'https://www.reddit.com{permalink}'.format(permalink = child["permalink"]),
+                        "author_post": child['link_author'],
                         "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat(),
                         "text_com": child['body'],
                         "link_joined": child['link_url'],
@@ -190,7 +194,6 @@ elif args.search:
             writer.writeheader()
             while True:
                     url = f'https://www.reddit.com/search.json?limit=100{after}&q={args.name}&sort=new'
-                    headers = {'user-agent': 'r2d2'}
                     headers = {'user-agent': 'r2d2'}
                     response = requests.get(url + after, headers=headers)
                     data = json.loads(response.text)
