@@ -35,7 +35,7 @@ commu = args.commu
 name = args.name
 
 
-def build_url_start(name): #another function for othe?
+def build_url_start(name): #add all the other posts,user etc in the () of the function ? 
     reddit_url = 'https://www.reddit.com'
     f_json = '.json?limit=100' 
     if community:     
@@ -60,7 +60,7 @@ def build_url_start(name): #another function for othe?
     return url_first
 url_first = build_url_start(name)
 
-def output_csv():
+def output_csv(): #add all the other posts,user etc in the () of the function ? 
     output_base = [
         "subreddit",
         "subreddit_id",
@@ -103,7 +103,7 @@ def output_csv():
     return output_CSV_header
 output_CSV_header = output_csv()
 
-def name_csv(name): #add all the other posts,user etc in the function ? 
+def name_csv(name): #add all the other posts,user etc in the () of the function ? 
     if community:
         file_name_CSV = f'community_posts_{name}_scraping_reddit.csv'
     elif user:
@@ -123,6 +123,7 @@ file_name_CSV = name_csv(name)
 with open(file_name_CSV, "w") as f :
     writer = csv.DictWriter(f, fieldnames=output_CSV_header)
     writer.writeheader()
+    url_first = build_url_start(name)
 
     def data_url(url_first): #after here or in the if at the end? bc already in the build_url fonction; if here add in request.geturl see other code
         url_first = build_url(name)
@@ -137,7 +138,7 @@ with open(file_name_CSV, "w") as f :
         return children
     children = data_children(data)
 
-    def data_posts(children, data):
+    def data_posts(children):
         for child in children:
             child = child['data']
             result = {
@@ -178,11 +179,11 @@ with open(file_name_CSV, "w") as f :
                 result["rules_of_publication_subreddit"] = child["submit_text"]
         return result 
 
-    result = data_posts(children, data)
+    result = data_posts(children)
     writer.writerow(result)
 
     while True:
-        def build_url(name, after): #add after in the function ?? another function for first url ?
+        def build_url(name, after): #add all the other posts,user etc in the () of the function ? 
             reddit_url = 'https://www.reddit.com'
             f_json = '.json?limit=100'
             after = "&after=" + data['data']['after'] 
@@ -210,7 +211,7 @@ with open(file_name_CSV, "w") as f :
         
         data = data_url(url)
         children = data_children(data)
-        result = data_posts(children, data)
+        result = data_posts(children)
         writer.writerow(result)
 
         if data['data']['after']:

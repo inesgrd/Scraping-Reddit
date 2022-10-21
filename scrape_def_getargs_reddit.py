@@ -36,14 +36,13 @@ def get_args():
 
     return community, user, search, posts, coms, commu, name
 
-#do 2 url fonction !!!! 
-def build_url(name, after): #add after in the function ?? another function for first url ?
+def build_url(name, community, user, posts, coms, search, commu):
     reddit_url = 'https://www.reddit.com'
     f_json = '.json?limit=100' 
     if community:     
         path = 'r'        
         page = 'new'
-        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}'        
+        url_first = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}'        
     elif user:        
         path = 'user'
         sort = '&sort=new'      
@@ -51,17 +50,17 @@ def build_url(name, after): #add after in the function ?? another function for f
             page = 'submitted'
         elif coms:    
             page = 'comments'
-        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
+        url_first = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
     elif search:
         path = 'search'
         if posts:
             sort = '&sort=new'
         elif commu:
             sort = '&type=sr'
-        url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
-    return url
+        url_first = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+    return url_first
 
-def output_csv():
+def output_csv(posts, user, coms, commu):
     output_base = [
         "subreddit",
         "subreddit_id",
@@ -103,7 +102,7 @@ def output_csv():
     output_CSV_header = output_base + output_spe
     return output_CSV_header
 
-def name_csv(name): #add all the other posts,user etc in the function ? 
+def name_csv(name, community, user, posts, coms, search, commu):
     if community:
         file_name_CSV = f'community_posts_{name}_scraping_reddit.csv'
     elif user:
@@ -118,24 +117,25 @@ def name_csv(name): #add all the other posts,user etc in the function ?
             file_name_CSV = f'search_commu_{name}_scraping_reddit.csv'
     return file_name_CSV
 
-def create_file_CSV():
+#If with open() is a function, the if __name__ == "__main__":, at the end do not recognise stuff in it
+def create_file_CSV(file_name_CSV, output_CSV_header):
     with open(file_name_CSV, "w") as f :
         writer = csv.DictWriter(f, fieldnames=output_CSV_header)
         writer.writeheader()
 
-        def data_url(url): #without the after !!!!!
-            url = build_url(name, '')
+        def data_url(url_first): #without the after !!!!!
+            url_first = build_url(name)
             headers = {'user-agent': 'r2d2'}
             response = requests.get(url, headers=headers)
-            data = json.loads(response.text)
-            return data
+            data_first = json.loads(response.text)
+            return data_first
 
         def data_children(data):
-            children = data['data']['children']
-            return children
+            children_first = data['data']['children']
+            return children_first
 
-        def data_posts(children, data):
-            for child in children:
+        def data_posts(children_first):
+            for child in children_first:
                 child = child['data']
                 result = {
                     "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat()
@@ -175,29 +175,59 @@ def create_file_CSV():
                     result["rules_of_publication_subreddit"] = child["submit_text"]
             return result 
 
-        result = data_posts(children, data)
         writer.writerow(result)
 
-
         while True:
-
-            #call all the function !!! 
-
+            def build_url(name, after):
+                reddit_url = 'https://www.reddit.com'
+                f_json = '.json?limit=100'
+                after = "&after=" + data['data']['after'] 
+                if community:     
+                    path = 'r'        
+                    page = 'new'
+                    url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}'        
+                elif user:        
+                    path = 'user'
+                    sort = '&sort=new'      
+                    if posts:     
+                        page = 'submitted'
+                    elif coms:    
+                        page = 'comments'
+                    url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
+                elif search:
+                    path = 'search'
+                    if posts:
+                        sort = '&sort=new'
+                    elif commu:
+                        sort = '&type=sr'
+                    url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+                return url
+            
+            data = data_url(url) #url not recognized here if with open() is not a function
+            children = data_children(data)
+            result = data_posts(children)
+            writer.writerow(result)
 
             if data['data']['after']:
-                after = "&after=" + data['data']['after']
+                after = "&after=" + data['data']['after'] #after underlined wierd if with open() 
             else:
                 break
 
+    return writer.writerow(result)
 
-if __name__ == "__main__":
+if __name__ == "__main__": #all recoginzed if with open() is not a function + do understand that ?boilerplate?
     community, user, search, posts, coms, commu, name = get_args()
     url = build_url(name, community, user, posts, coms, search, commu) #add after in the function ?
     output_CSV_header = output_csv(name, user, posts, coms, commu)
     file_name_CSV = name_csv(name, community, user, posts, coms, search, commu)
-#    writer.writeheader() = create_file_CSV()
-    data = data_url(url)
-    children = data_children(data)
+    data_first = data_url(url_first) #data_url not recognized when with open() is a function
+    children_first = data_children(data_first) #data_children not recognized when with open() is a function
+    result_first = data_posts(children_first) #data_posts not recognized when with open() is a function
+    url = build_url(name, after, community, user, posts, coms, search, commu) #after not recognized when with open() is a function
+    data = data_url(url) #data_url not recognized when with open() is a function
+    children = data_children(data) #data_children not recognized when with open() is a function
+    result = data_posts(children) #data_posts not recognized when with open() is a function
+    
 
 
 
