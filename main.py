@@ -5,7 +5,7 @@ import requests
 import csv
 import urllib.request
 import time
-from urllib.parse import quote
+from urllib.parse import quote_plus
 from pprint import pprint
 from datetime import datetime
 import argparse
@@ -47,6 +47,7 @@ def get_args():
 
     return community, user, search, type, name
 
+community, user, search, type, name = get_args()
 
 # ------------------------------------------------#
 # VERIFY ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -71,19 +72,23 @@ def test_error(community, user, search, type):
         error (str) : indicates there is an error and what is possible
     """
     if community:
+        if type == 'posts':
+            error = None
         if type == 'comments':
-            error = print('Sorry this query is impossible ! See help for a working combination, community only posible with posts')
+            error = 'Sorry this query is impossible ! See help for a working combination, community only posible with posts'
         if type == 'commu':
-            error = print('Sorry this query is impossible ! See help for a working combination, community only posible with posts')
+            error = 'Sorry this query is impossible ! See help for a working combination, community only posible with posts'
     elif user:
+        if type == 'posts' or type == 'comments':
+             error = None
         if type == 'commu':
-            error = print('Sorry this query is impossible ! See help for a working combination, user only posible with posts OR comments')
+            error = 'Sorry this query is impossible ! See help for a working combination, user only posible with posts OR comments'
     elif search:
+        if type == 'posts' or type == 'commu':
+             error = None
         if type == 'comments':
-            error = print('Sorry this query is impossible ! See help for a working combination, search only posible with posts OR commu')
+            error = 'Sorry this query is impossible ! See help for a working combination, search only posible with posts OR commu'
     return error
-## possible to stop the script if error is return ? 
-
 
 # ------------------------------------------------#
 # CONCATENATE A URL TO SCRAPE
@@ -122,13 +127,14 @@ def build_url(community, user, search, type, name, after=""):
         path = 'search'
         if type == 'posts':
             sort = '&sort=new'
+            if 'https://' in name:
+                name = f'url:{name}'
+                url = f'{reddit_url}/{path}{f_json}{after}&q={quote_plus(name)}&type=link{sort}'
+            elif 'https://' not in name:
+                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
         elif type == 'commu':
             sort = '&type=sr'
-        url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
-        
-    # "url:{quote(name)}"
-    #print(f"calling {url}", file=sys.stderr)
-
+            url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
     return url
 
 
@@ -217,7 +223,10 @@ def name_csv(community, user, search, type, name):
             csv_file_name = f'user_comments_{name}_scraping_reddit.csv'
     elif search:
         if type == 'posts':
-            csv_file_name = f'search_posts_{name}_scraping_reddit.csv'
+            if 'https://' in name:
+                csv_file_name = f'search_posts_url_scraping_reddit.csv'
+            if 'https://' not in name:
+                csv_file_name = f'search_posts_{name}_scraping_reddit.csv'
         elif type == 'commu':
             csv_file_name = f'search_commu_{name}_scraping_reddit.csv'
     return csv_file_name
@@ -320,61 +329,67 @@ def main():
     # -- STEP 1.1 --
     # Verify is the combination of the arguments passed to the command line is possible
 
-    test_error(community, user, search, type)
-    # Return error if there is any
+    error = test_error(community, user, search, type)
+    # Return error if there is any ortherwise error is None
+
+    if error is not None:
+        print(error)
+        exit()
+        # Stop the script if there is any
+    else : 
 
     # ------------------------------------------------#
-    # -- STEP 2 -- 
+    # -- STEP 2 -- x
     # Open the CSV file and create a CSV writer object
     
-    csv_file_name = name_csv(community, user, search, type, name)
-    # Give a name to the CSV file
-    
-    with open(csv_file_name, "w") as f: # Open the CSV file
+        csv_file_name = name_csv(community, user, search, type, name)
+        # Give a name to the CSV file
         
-        fieldnames = output_csv(type, user) # Name the columns in the CSV file
-        
-        writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
-        
-        writer.writeheader()
-        # Write to the CSV the header row given by the writer parameter's 'fieldnames'
+        with open(csv_file_name, "w") as f: # Open the CSV file
+            
+            fieldnames = output_csv(type, user) # Name the columns in the CSV file
+            
+            writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
+            
+            writer.writeheader()
+            # Write to the CSV the header row given by the writer parameter's 'fieldnames'
 
-        # ------------------------------------------------#
-        # -- STEP 3 -- 
-        # Scrape page(s) and write the result to the CSV file
+            # ------------------------------------------------#
+            # -- STEP 3 -- 
+            # Scrape page(s) and write the result to the CSV file
 
-        # -- STEP 3.1 -- 
-        # Scrape the landing page (first page)
+            # -- STEP 3.1 -- 
+            # Scrape the landing page (first page)
 
-        url = build_url(community, user, search, type, name)
-        # Customise the URL to be scraped according to the command line arguments
-        
-        data, after = scrape_page(url)
-        # Scrape all the HTML from the URL given
-
-        results = clean_data(data, type, user)
-        # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
-        # 2. the value of data['data']['after'] ('after')
-
-        writer.writerows(results) # Write the cleaned result to the open CSV file
-
-        # -- STEP 3.2 -- 
-        # Scrape any pages following the landing page (first page)
-
-        while after != None: 
-            # If the last time 'clean_data()' was called and the function found 
-            # that there was another page after the current one (aka 'after' does 
-            # not equal an empty string), loop through this process one more time.
-
-            after = f"&after={data['data']['after']}"
-
-            url = build_url(community, user, search, type, name, after)
-
+            url = build_url(community, user, search, type, name)
+            # Customise the URL to be scraped according to the command line arguments
+            
             data, after = scrape_page(url)
+            # Scrape all the HTML from the URL given
 
             results = clean_data(data, type, user)
+            # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
+            # 2. the value of data['data']['after'] ('after')
 
-            writer.writerows(results)
+            writer.writerows(results) # Write the cleaned result to the open CSV file
+
+            # -- STEP 3.2 -- 
+            # Scrape any pages following the landing page (first page)
+
+            while after != None: 
+                # If the last time 'clean_data()' was called and the function found 
+                # that there was another page after the current one (aka 'after' does 
+                # not equal an empty string), loop through this process one more time.
+
+                after = f"&after={data['data']['after']}"
+
+                url = build_url(community, user, search, type, name, after)
+
+                data, after = scrape_page(url)
+
+                results = clean_data(data, type, user)
+
+                writer.writerows(results)
 
 
 # This "boilerplate" tells python what to execute when this module
