@@ -321,7 +321,7 @@ def main():
     # Verify is the combination of the arguments passed to the command line is possible
 
     test_error(community, user, search, type)
-
+    # Return error if there is any
 
     # ------------------------------------------------#
     # -- STEP 2 -- 
