@@ -5,6 +5,7 @@ import requests
 import csv
 import urllib.request
 import time
+from urllib.parse import quote
 from pprint import pprint
 from datetime import datetime
 import argparse
@@ -22,21 +23,17 @@ def get_args():
         community (str) : community page to scrape (indicates it is a community page to scrape)
         user (str) : user page to scrape (indicates it is a user page to scrape)
         search (str) : search function to scrape (indicates it is the search function to scrape)
-        posts (str) : posts to scrape (indicates these are posts to scrape)
-        coms (str) : comments to scrape (indicates these are comments to scrape)
-        commu (str) : communities to scrape (indicates these are communities to scrape)
+        type (str) : type of data to scrape, posts OR comments OR commu (indicates these are either posts or comments or communities to scrape)
         name (str) : name of a community OR a user OR a keyword for a query 
     """
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
 
-    group.add_argument("-c", "--community", action="store_true", help="to scrape a community")
-    group.add_argument("-u", "--user", action="store_true", help="to scrape a user")
-    group.add_argument("-s", "--search", action="store_true", help="to scrape a search page")
+    group.add_argument("-c", "--community", action="store_true", help="to scrape a community, only compatible with posts")
+    group.add_argument("-u", "--user", action="store_true", help="to scrape a user, only compatible with posts OR comments")
+    group.add_argument("-s", "--search", action="store_true", help="to scrape a search page, only compatible with posts OR commu")
 
-    parser.add_argument("--posts", action="store_true", help="to scrape the posts")
-    parser.add_argument("--coms", action="store_true", help="to scrape the comments")
-    parser.add_argument("--commu", action="store_true", help="to scrape the community in the result of a search")
+    parser.add_argument("-t", "--type", default="posts", choices=["posts", "comments", "commu"], help="indicate what type of data you want to scrape, only choose one and be careful it is a working combination: -> posts and community OR user OR search, -> comments and user, -> commu and search")
 
     parser.add_argument("name", help="either the name of the community OR the name of an user OR the keyword searched in Reddit")
 
@@ -45,33 +42,67 @@ def get_args():
     community = args.community
     user = args.user
     search = args.search
-    posts = args.posts
-    coms = args.coms
-    commu = args.commu
+    type = args.type
     name = args.name
 
-    return community, user, search, posts, coms, commu, name
+    return community, user, search, type, name
+
+
+# ------------------------------------------------#
+# VERIFY ARGUMENTS PASSED FROM THE COMMAND LINE
+# ------------------------------------------------#
+def test_error(community, user, search, type):
+    """
+    Using the command line arguments, verify their combinaison 
+    is possible to scrape data from Reddit
+
+    Reminder : 
+    -> community and posts
+    -> user and posts OR comments
+    -> search and posts OR commu
+
+    Args:
+        community (str) : community page to scrape
+        user (str) : user page to scrape
+        search (str) : search function to scrape 
+        type (str) : type of data to scrape, posts OR comments OR commu
+
+    Return:
+        error (str) : indicates there is an error and what is possible
+    """
+    if community:
+        if type == 'comments':
+            error = print('Sorry this query is impossible ! See help for a working combination, community only posible with posts')
+        if type == 'commu':
+            error = print('Sorry this query is impossible ! See help for a working combination, community only posible with posts')
+    elif user:
+        if type == 'commu':
+            error = print('Sorry this query is impossible ! See help for a working combination, user only posible with posts OR comments')
+    elif search:
+        if type == 'comments':
+            error = print('Sorry this query is impossible ! See help for a working combination, search only posible with posts OR commu')
+    return error
+## possible to stop the script if error is return ? 
 
 
 # ------------------------------------------------#
 # CONCATENATE A URL TO SCRAPE
 # ------------------------------------------------#
-def build_url(name, community, user, posts, coms, search, commu, after=""): 
+def build_url(community, user, search, type, name, after=""): 
     """
     Using the command line arguments, concatenate the URL needed to access
     the Reddit page(s) that the user wants to scrape.
 
-    Args:
-        name (str) : name of a community OR name of a user OR a keyword for a query 
+    Args: 
+        community (str) : community page to scrape
         user (str) : user page to scrape
         search (str) : search function to scrape 
-        posts (str) : posts to scrape
-        coms (str) : comments to scrape
-        commu (str) : communities to scrape
-        ## after (str) : id of the next json page OR null/void here
+        type (str) : type of data to scrape, posts OR comments OR commu
+        name (str) : name of a community OR name of a user OR a keyword for a query
+        after (str) : id of the next json page OR null/void here
 
     Return:
-        url_first (str) : URL to be requested and scraped
+        url (str) : URL to be requested and scraped
     """
     reddit_url = 'https://www.reddit.com'
     f_json = '.json?limit=100'
@@ -82,54 +113,47 @@ def build_url(name, community, user, posts, coms, search, commu, after=""):
     elif user:        
         path = 'user'
         sort = '&sort=new'      
-        if posts:     
+        if type == 'posts':     
             page = 'submitted'
-        elif coms:    
+        elif type == 'comments':    
             page = 'comments'
         url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
     elif search:
         path = 'search'
-        if posts:
+        if type == 'posts':
             sort = '&sort=new'
-        elif commu:
+        elif type == 'commu':
             sort = '&type=sr'
         url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
-    print(f"calling {url}", file=sys.stderr)
+        
+    # "url:{quote(name)}"
+    #print(f"calling {url}", file=sys.stderr)
+
     return url
 
 
 # ------------------------------------------------#
 # LIST THE COLUMN HEADERS FOR THE OUTPUT CSV FILE
 # ------------------------------------------------#
-def output_csv(posts, user, coms, commu):
+def output_csv(type, user):
     """
     Using the command line arguments, customise the column headers in
     the output CSV file according to what the user wants to research.
 
     Args:
-        posts (str) : posts to scrape
+        type (str) : type of data to scrape, posts OR comments OR commu
         user (str) : user page to scrape
-        coms (str) : comments to scrape
-        commu (str) : communities to scrape
     
     Return:
         output_CSV_header (list) : list of column headers
     """
-
-    # Bug : If the user did not put a value for posts, user, coms, or commu,
-    # the variable 'output_spe[]' will have not been created. Consequently, at 
-    # line 165, the concatenation will raise an error because the variable 
-    # 'output_spe[]' doesn't exist.
-    ## I : the user have to choose one, the script does not work if none 
-    ## of the above is selected
-
     output_base = [
         "subreddit",
         "subreddit_id",
         "link_post",
         "date_utc",
     ]
-    if posts:
+    if type == 'posts':
         output_spe = [
             "subreddit_subscribers",
             "title_post",
@@ -144,7 +168,7 @@ def output_csv(posts, user, coms, commu):
             output_spe = output_spe + [
                 "author_post"
             ]
-    elif coms:
+    elif type == 'comments':
             output_spe = [
                 "title_post",
                 "author_post",
@@ -154,7 +178,7 @@ def output_csv(posts, user, coms, commu):
                 "comments_post",
                 "awards_com"
             ]
-    elif commu:
+    elif type == 'commu':
         output_spe = [
             "subreddit_name",
             "subreddit_subscribers",
@@ -167,36 +191,36 @@ def output_csv(posts, user, coms, commu):
 # ------------------------------------------------#
 # CONCATENATE THE NAME OF THE OUTPUT CSV FILE
 # ------------------------------------------------#
-def name_csv(name, community, user, posts, coms, search, commu):
+def name_csv(community, user, search, type, name):
     """
     Using the command line arguments, customise the name of the CSV file
     that this program outputs.
 
     Args:
-        name (str) : name of a community OR name of a user OR a keyword for a query 
         community (str) : community page to scrape
         user (str) : user page to scrape
-        posts (str) : posts to scrape
-        coms (str) : comments to scrape
         search (str) : search function to scrape
-        commu (str) : communities to scrape
+        type (str) : type of data to scrape, posts OR comments OR commu
+        name (str) : name of a community OR name of a user OR a keyword for a query 
     
     Return:
-        file_name_CSV (str) : name of the CSV file
+        csv_file_name (str) : name of the CSV file
     """
     if community:
-        file_name_CSV = f'community_posts_{name}_scraping_reddit.csv'
+        csv_file_name = f'community_posts_{name}_scraping_reddit.csv'
+        #if type == 'posts':
+    
     elif user:
-        if posts:
-            file_name_CSV = f'user_posts_{name}_scraping_reddit.csv'
-        elif coms:
-            file_name_CSV = f'user_comments_{name}_scraping_reddit.csv'
+        if type == 'posts':
+            csv_file_name = f'user_posts_{name}_scraping_reddit.csv'
+        elif type == 'comments':
+            csv_file_name = f'user_comments_{name}_scraping_reddit.csv'
     elif search:
-        if posts :
-            file_name_CSV = f'search_posts_{name}_scraping_reddit.csv'
-        elif commu:
-            file_name_CSV = f'search_commu_{name}_scraping_reddit.csv'
-    return file_name_CSV
+        if type == 'posts':
+            csv_file_name = f'search_posts_{name}_scraping_reddit.csv'
+        elif type == 'commu':
+            csv_file_name = f'search_commu_{name}_scraping_reddit.csv'
+    return csv_file_name
 
 
 # ------------------------------------------------#
@@ -208,8 +232,7 @@ def scrape_page(url):
     the user wants to scrape in json format.
 
     Args:
-        url (str) :  URL to be requested and scraped 
-        ## or url_first 
+        url (str) :  URL to be requested and scraped
     
     Return:
         data (str) : data from the URL in json format
@@ -219,13 +242,13 @@ def scrape_page(url):
     response = requests.get(url, headers=headers)
     data = json.loads(response.text)
     after = data['data']['after']
-    return data, after ## getting the value for after here
+    return data, after
 
 
 # ------------------------------------------------#
 # CLEAN DATA
 # ------------------------------------------------#
-def clean_data(data, user, posts, coms, commu):
+def clean_data(data, type, user):
     """
     Using the command line arguments and data, divise the data into 
     categories the user wants to scrape and select only the meaningfull 
@@ -233,25 +256,20 @@ def clean_data(data, user, posts, coms, commu):
 
     Args:
         data (str) : data from the URL in json format
-        name (str) :  name of a community OR name of a user OR a keyword for a query 
-        community (str) : community page to scrape
+        type (str) : type of data to scrape, posts OR comments OR commu
         user (str) : user page to scrape
-        posts (str) : posts to scrape
-        coms (str) : comments to scrape
-        search (str) : search function to scrape
-        commu (str) : communities to scrape
     
     Return:
         result (list) : 
     """
     children = data['data']['children']
-    results = [] ## creating a list to not write each row one by one
+    results = []
     for child in children:
         child = child['data']
         result = {
             "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat()
         }
-        if posts:
+        if type == 'posts':
             result["subreddit"] = child["subreddit"]
             result["subreddit_id"] = child["subreddit_id"]
             result["subreddit_subscribers"] = child["subreddit_subscribers"]
@@ -265,7 +283,7 @@ def clean_data(data, user, posts, coms, commu):
             result["domain_link_joined"] = child["domain"]
             if not user:
                 result["author_post"] = child['author']
-        elif coms:
+        elif type == 'comments':
             result["subreddit"] = child["subreddit"]
             result["subreddit_id"] = child["subreddit_id"]
             result["title_post"] = child["link_title"]
@@ -276,7 +294,7 @@ def clean_data(data, user, posts, coms, commu):
             result["score_com"] = child["score"]
             result["comments_post"] = child["num_comments"]
             result["awards_com"] = child["total_awards_received"]
-        elif commu:
+        elif type == 'commu':
             result["subreddit"] = child["display_name"]
             result["subreddit_name"] = child["title"]
             result["subreddit_id"] = child["name"]
@@ -296,19 +314,25 @@ def main():
     # -- STEP 1 -- 
     # Parse the arguments passed to the command line
 
-    community, user, search, posts, coms, commu, name = get_args()
+    community, user, search, type, name = get_args()
     # Save their values as meaningful variables
+
+    # -- STEP 1.1 --
+    # Verify is the combination of the arguments passed to the command line is possible
+
+    test_error(community, user, search, type)
+
 
     # ------------------------------------------------#
     # -- STEP 2 -- 
     # Open the CSV file and create a CSV writer object
     
-    csv_file_name = name_csv(name, community, user, posts, coms, search, commu)
+    csv_file_name = name_csv(community, user, search, type, name)
     # Give a name to the CSV file
     
     with open(csv_file_name, "w") as f: # Open the CSV file
         
-        fieldnames = output_csv(posts, user, coms, commu) # Name the columns in the CSV file
+        fieldnames = output_csv(type, user) # Name the columns in the CSV file
         
         writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
         
@@ -322,13 +346,13 @@ def main():
         # -- STEP 3.1 -- 
         # Scrape the landing page (first page)
 
-        url = build_url(name, community, user, posts, coms, search, commu)
+        url = build_url(community, user, search, type, name)
         # Customise the URL to be scraped according to the command line arguments
         
         data, after = scrape_page(url)
         # Scrape all the HTML from the URL given
 
-        results = clean_data(data, user, posts, coms, commu)
+        results = clean_data(data, type, user)
         # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
         # 2. the value of data['data']['after'] ('after')
 
@@ -341,20 +365,16 @@ def main():
             # If the last time 'clean_data()' was called and the function found 
             # that there was another page after the current one (aka 'after' does 
             # not equal an empty string), loop through this process one more time.
-            ## changed after != '' to after != None 
-            ## because the value of after when it has to stop is None and not ''
 
             after = f"&after={data['data']['after']}"
 
-            url = build_url(name, community, user, posts, coms, search, commu, after)
+            url = build_url(community, user, search, type, name, after)
 
             data, after = scrape_page(url)
 
-            results = clean_data(data, user, posts, coms, commu)
+            results = clean_data(data, type, user)
 
             writer.writerows(results)
-
-
 
 
 # This "boilerplate" tells python what to execute when this module
@@ -367,5 +387,3 @@ def main():
 # adaptability.
 if __name__ == "__main__":
     main()
-
- 
