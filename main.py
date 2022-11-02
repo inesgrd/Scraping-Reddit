@@ -9,7 +9,13 @@ from urllib.parse import quote_plus
 from pprint import pprint
 from datetime import datetime
 import argparse
+import os
 
+## bug to fix ##
+# When url searched (De Factor, Cdr);
+# if one url has many results, only one result is saved
+# the other results are not stored in the field. 
+# I am lacking results in the csv field in the end.
 
 # ------------------------------------------------#
 # PARSE THE ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -127,10 +133,10 @@ def build_url(community, user, search, type, name, after=""):
         path = 'search'
         if type == 'posts':
             sort = '&sort=new'
-            if 'https://' in name:
+            if '/' in name:
                 name = f'url:{name}'
                 url = f'{reddit_url}/{path}{f_json}{after}&q={quote_plus(name)}&type=link{sort}'
-            elif 'https://' not in name:
+            elif '/' not in name:
                 url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
         elif type == 'commu':
             sort = '&type=sr'
@@ -214,8 +220,6 @@ def name_csv(community, user, search, type, name):
     """
     if community:
         csv_file_name = f'community_posts_{name}_scraping_reddit.csv'
-        #if type == 'posts':
-    
     elif user:
         if type == 'posts':
             csv_file_name = f'user_posts_{name}_scraping_reddit.csv'
@@ -223,9 +227,9 @@ def name_csv(community, user, search, type, name):
             csv_file_name = f'user_comments_{name}_scraping_reddit.csv'
     elif search:
         if type == 'posts':
-            if 'https://' in name:
+            if '/' in name:
                 csv_file_name = f'search_posts_url_scraping_reddit.csv'
-            if 'https://' not in name:
+            if '/' not in name:
                 csv_file_name = f'search_posts_{name}_scraping_reddit.csv'
         elif type == 'commu':
             csv_file_name = f'search_commu_{name}_scraping_reddit.csv'
@@ -269,7 +273,7 @@ def clean_data(data, type, user):
         user (str) : user page to scrape
     
     Return:
-        result (list) : 
+        result (list) : results in json format
     """
     children = data['data']['children']
     results = []
@@ -312,7 +316,8 @@ def clean_data(data, type, user):
             result["description_subreddit"] = child["public_description"]
             result["rules_of_publication_subreddit"] = child["submit_text"]
         results.append(result)
-    return results
+        if len(results) > 0:
+            return results[0]
 
 
 # ------------------------------------------------#
@@ -345,13 +350,16 @@ def main():
         csv_file_name = name_csv(community, user, search, type, name)
         # Give a name to the CSV file
         
-        with open(csv_file_name, "w") as f: # Open the CSV file
+        file_exist = os.path.isfile(csv_file_name)
+
+        with open(csv_file_name, "a") as f: # Open the CSV file
             
             fieldnames = output_csv(type, user) # Name the columns in the CSV file
             
             writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
             
-            writer.writeheader()
+            if not file_exist: 
+                writer.writeheader()
             # Write to the CSV the header row given by the writer parameter's 'fieldnames'
 
             # ------------------------------------------------#
@@ -370,8 +378,8 @@ def main():
             results = clean_data(data, type, user)
             # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
             # 2. the value of data['data']['after'] ('after')
-
-            writer.writerows(results) # Write the cleaned result to the open CSV file
+            if results:
+                writer.writerow(results) # Write the cleaned result to the open CSV file
 
             # -- STEP 3.2 -- 
             # Scrape any pages following the landing page (first page)
@@ -389,7 +397,8 @@ def main():
 
                 results = clean_data(data, type, user)
 
-                writer.writerows(results)
+                if results:
+                    writer.writerow(results)
 
 
 # This "boilerplate" tells python what to execute when this module
