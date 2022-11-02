@@ -11,11 +11,6 @@ from datetime import datetime
 import argparse
 import os
 
-## bug to fix ##
-# When url searched (De Factor, Cdr);
-# if one url has many results, only one result is saved
-# the other results are not stored in the field. 
-# I am lacking results in the csv field in the end.
 
 # ------------------------------------------------#
 # PARSE THE ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -316,8 +311,8 @@ def clean_data(data, type, user):
             result["description_subreddit"] = child["public_description"]
             result["rules_of_publication_subreddit"] = child["submit_text"]
         results.append(result)
-        if len(results) > 0:
-            return results[0]
+    if len(results) > 0:
+        return results
 
 
 # ------------------------------------------------#
@@ -376,10 +371,11 @@ def main():
             # Scrape all the HTML from the URL given
 
             results = clean_data(data, type, user)
+
             # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
             # 2. the value of data['data']['after'] ('after')
             if results:
-                writer.writerow(results) # Write the cleaned result to the open CSV file
+                writer.writerows(results) # Write the cleaned result to the open CSV file
 
             # -- STEP 3.2 -- 
             # Scrape any pages following the landing page (first page)
@@ -398,7 +394,7 @@ def main():
                 results = clean_data(data, type, user)
 
                 if results:
-                    writer.writerow(results)
+                    writer.writerows(results)
 
 
 # This "boilerplate" tells python what to execute when this module
