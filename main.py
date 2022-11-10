@@ -1,16 +1,14 @@
-from fileinput import filename
-import sys
 import json
 import requests
 import csv
-import urllib.request
-import time
 from urllib.parse import quote_plus
-from pprint import pprint
 from datetime import datetime
 import argparse
 import os
 
+## Pb : duplicates when the number of comments or score changes during the scrapping
+## need to clean the dataset after 
+## find a way to say in the script ; a linkpost cannot appears twice (so do not take another the posts if already have this link?)
 
 # ------------------------------------------------#
 # PARSE THE ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -347,7 +345,7 @@ def main():
         
         file_exist = os.path.isfile(csv_file_name)
 
-        with open(csv_file_name, "a") as f: # Open the CSV file
+        with open(csv_file_name, "w") as f: # Open the CSV file
             
             fieldnames = output_csv(type, user) # Name the columns in the CSV file
             
