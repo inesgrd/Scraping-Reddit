@@ -113,7 +113,7 @@ def build_url(community, user, search, type, name, after=""):
     if community:     
         path = 'r'        
         page = 'new'
-        if after: ## ADD the after prefix -> change the urls
+        if after:
             after_prefix = '&after='
             url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after_prefix}{after}'
         else:
@@ -261,14 +261,13 @@ def scrape_page(url):
         url (str) :  URL to be requested and scraped
     
     Return:
-        data (str) : data from the URL in json format
+        children (str) : relevant data with from the URL in json format
         after (str) : id of the next json page 
-    """ ## CHANGE the return
+    """ 
     headers = {'user-agent': 'r2d2'}
     response = requests.get(url, headers=headers)
     data = json.loads(response.text)
     after = data['data']['after']
-    ## ADD children = data['data']['children']
     children = data['data']['children']
     return children, after
 
@@ -276,7 +275,7 @@ def scrape_page(url):
 # ------------------------------------------------#
 # CLEAN DATA
 # ------------------------------------------------#
-def clean_data(children, type, user): ## REPLACE data by children
+def clean_data(children, type, user):
     """
     Using the command line arguments and data, divise the data into 
     categories the user wants to scrape and select only the meaningfull 
@@ -290,7 +289,6 @@ def clean_data(children, type, user): ## REPLACE data by children
     Return:
         result (list) : results in json format
     """
-    #children = data['data']['children'] ## DELETE would be deleted to get directly children from clean_data()
     results = []
     for child in children:
         child = child['data']
@@ -385,7 +383,7 @@ def main():
         url = build_url(community, user, search, type, name, after="")
         # Customise the URL to be scraped according to the command line arguments
         
-        children, after = scrape_page(url) ## REPLACE data by children
+        children, after = scrape_page(url)
         # Scrape all the HTML from the URL given
 
         results = clean_data(children, type, user)
@@ -403,11 +401,11 @@ def main():
             # that there was another page after the current one (aka 'after' does 
             # not equal an empty string), loop through this process one more time.
 
-            after = f"&after={after}" ## what about this data ?? after = f"&after={data['data']['after']}
+            after = f"&after={after}"
 
             url = build_url(community, user, search, type, name, after)
 
-            children, after = scrape_page(url) ## REPLACE data by children
+            children, after = scrape_page(url)
 
             results = clean_data(children, type, user)
 
