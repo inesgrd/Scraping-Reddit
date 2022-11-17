@@ -113,7 +113,11 @@ def build_url(community, user, search, type, name, after=""):
     if community:     
         path = 'r'        
         page = 'new'
-        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}'        
+        if after: ## ADD the after prefix -> change the urls
+            after_prefix = '&after='
+            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after_prefix}{after}'
+        else:
+            url = f'{reddit_url}/{path}/{name}/{page}{f_json}'
     elif user:        
         path = 'user'
         sort = '&sort=new'      
@@ -121,19 +125,35 @@ def build_url(community, user, search, type, name, after=""):
             page = 'submitted'
         elif type == 'comments':    
             page = 'comments'
-        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
+        if after:
+            after_prefix = '&after='
+            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after_prefix}{after}{sort}'
+        else:
+            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{sort}'
     elif search:
         path = 'search'
         if type == 'posts':
             sort = '&sort=new'
             if '/' in name:
                 name = f'url:{name}'
-                url = f'{reddit_url}/{path}{f_json}{after}&q={quote_plus(name)}&type=link{sort}'
+                if after:
+                    after_prefix = '&after='
+                    url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={quote_plus(name)}&type=link{sort}'
+                else:
+                    url = f'{reddit_url}/{path}{f_json}&q={quote_plus(name)}&type=link{sort}'
             elif '/' not in name:
-                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+                if after:
+                    after_prefix = '&after='
+                    url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={name}{sort}'
+                else:
+                    url = f'{reddit_url}/{path}{f_json}&q={name}{sort}'
         elif type == 'commu':
             sort = '&type=sr'
-            url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+            if after:
+                after_prefix = '&after='
+                url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={name}{sort}'
+            else:
+                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
     return url
 
 
@@ -243,18 +263,20 @@ def scrape_page(url):
     Return:
         data (str) : data from the URL in json format
         after (str) : id of the next json page 
-    """
+    """ ## CHANGE the return
     headers = {'user-agent': 'r2d2'}
     response = requests.get(url, headers=headers)
     data = json.loads(response.text)
     after = data['data']['after']
-    return data, after
+    ## ADD children = data['data']['children']
+    children = data['data']['children']
+    return children, after
 
 
 # ------------------------------------------------#
 # CLEAN DATA
 # ------------------------------------------------#
-def clean_data(data, type, user):
+def clean_data(children, type, user): ## REPLACE data by children
     """
     Using the command line arguments and data, divise the data into 
     categories the user wants to scrape and select only the meaningfull 
@@ -268,7 +290,7 @@ def clean_data(data, type, user):
     Return:
         result (list) : results in json format
     """
-    children = data['data']['children']
+    #children = data['data']['children'] ## DELETE would be deleted to get directly children from clean_data()
     results = []
     for child in children:
         child = child['data']
@@ -331,68 +353,66 @@ def main():
     # Return error if there is any ortherwise error is None
 
     if error is not None:
-        print(error)
-        exit()
-        # Stop the script if there is any
-    else : 
+        exit(error)
+        # Stop the script if the combination is not possible
 
     # ------------------------------------------------#
     # -- STEP 2 -- x
     # Open the CSV file and create a CSV writer object
     
-        csv_file_name = name_csv(community, user, search, type, name)
-        # Give a name to the CSV file
+    csv_file_name = name_csv(community, user, search, type, name)
+    # Give a name to the CSV file
+    
+    file_exist = os.path.isfile(csv_file_name)
+
+    with open(csv_file_name, "w") as f: # Open the CSV file
         
-        file_exist = os.path.isfile(csv_file_name)
+        fieldnames = output_csv(type, user) # Name the columns in the CSV file
+        
+        writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
+        
+        if not file_exist: 
+            writer.writeheader()
+        # Write to the CSV the header row given by the writer parameter's 'fieldnames'
 
-        with open(csv_file_name, "w") as f: # Open the CSV file
-            
-            fieldnames = output_csv(type, user) # Name the columns in the CSV file
-            
-            writer = csv.DictWriter(f, fieldnames=fieldnames) # Create the writer object
-            
-            if not file_exist: 
-                writer.writeheader()
-            # Write to the CSV the header row given by the writer parameter's 'fieldnames'
+        # ------------------------------------------------#
+        # -- STEP 3 -- 
+        # Scrape page(s) and write the result to the CSV file
 
-            # ------------------------------------------------#
-            # -- STEP 3 -- 
-            # Scrape page(s) and write the result to the CSV file
+        # -- STEP 3.1 -- 
+        # Scrape the landing page (first page)
 
-            # -- STEP 3.1 -- 
-            # Scrape the landing page (first page)
+        url = build_url(community, user, search, type, name, after="")
+        # Customise the URL to be scraped according to the command line arguments
+        
+        children, after = scrape_page(url) ## REPLACE data by children
+        # Scrape all the HTML from the URL given
 
-            url = build_url(community, user, search, type, name)
-            # Customise the URL to be scraped according to the command line arguments
-            
-            data, after = scrape_page(url)
-            # Scrape all the HTML from the URL given
+        results = clean_data(children, type, user)
 
-            results = clean_data(data, type, user)
+        # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
+        # 2. the value of data['data']['after'] ('after')
+        if results:
+            writer.writerows(results) # Write the cleaned result to the open CSV file
 
-            # Parse raw HTML data and return 1. cleaned data ('result') in a dictionary and
-            # 2. the value of data['data']['after'] ('after')
+        # -- STEP 3.2 -- 
+        # Scrape any pages following the landing page (first page)
+
+        while after != None: 
+            # If the last time 'clean_data()' was called and the function found 
+            # that there was another page after the current one (aka 'after' does 
+            # not equal an empty string), loop through this process one more time.
+
+            after = f"&after={after}" ## what about this data ?? after = f"&after={data['data']['after']}
+
+            url = build_url(community, user, search, type, name, after)
+
+            children, after = scrape_page(url) ## REPLACE data by children
+
+            results = clean_data(children, type, user)
+
             if results:
-                writer.writerows(results) # Write the cleaned result to the open CSV file
-
-            # -- STEP 3.2 -- 
-            # Scrape any pages following the landing page (first page)
-
-            while after != None: 
-                # If the last time 'clean_data()' was called and the function found 
-                # that there was another page after the current one (aka 'after' does 
-                # not equal an empty string), loop through this process one more time.
-
-                after = f"&after={data['data']['after']}"
-
-                url = build_url(community, user, search, type, name, after)
-
-                data, after = scrape_page(url)
-
-                results = clean_data(data, type, user)
-
-                if results:
-                    writer.writerows(results)
+                writer.writerows(results)
 
 
 # This "boilerplate" tells python what to execute when this module
