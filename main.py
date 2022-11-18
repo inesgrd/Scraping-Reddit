@@ -8,6 +8,7 @@ import os
 
 ## Pb : duplicates when the number of comments or score changes during the scrapping
 ## need to clean the dataset after 
+## only with urls ?
 ## find a way to say in the script ; a linkpost cannot appears twice (so do not take another the posts if already have this link?)
 
 # ------------------------------------------------#
@@ -400,8 +401,6 @@ def main():
             # If the last time 'clean_data()' was called and the function found 
             # that there was another page after the current one (aka 'after' does 
             # not equal an empty string), loop through this process one more time.
-
-            after = f"&after={after}"
 
             url = build_url(community, user, search, type, name, after)
 
