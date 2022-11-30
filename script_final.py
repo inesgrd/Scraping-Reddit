@@ -111,14 +111,12 @@ def build_url(community, user, search, type, name, after):
     """
     reddit_url = 'https://www.reddit.com'
     f_json = '.json?limit=100'
+    if after: 
+        after = f'&after={after}'
     if community:     
         path = 'r'        
         page = 'new'
-        if after:
-            after_prefix = '&after='
-            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after_prefix}{after}'
-        else:
-            url = f'{reddit_url}/{path}/{name}/{page}{f_json}'
+        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}'
     elif user:        
         path = 'user'
         sort = '&sort=new'      
@@ -126,34 +124,19 @@ def build_url(community, user, search, type, name, after):
             page = 'submitted'
         elif type == 'comments':    
             page = 'comments'
-        if after:
-            after_prefix = '&after='
-            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after_prefix}{after}{sort}'
-        else:
-            url = f'{reddit_url}/{path}/{name}/{page}{f_json}{sort}'
+        url = f'{reddit_url}/{path}/{name}/{page}{f_json}{after}{sort}'
     elif search:
         path = 'search'
         if type == 'posts':
             sort = '&sort=new'
             if '/' in name:
                 name = f'url:{name}'
-                if after:
-                    after_prefix = '&after='
-                    url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={quote_plus(name)}&type=link{sort}'
-                else:
-                    url = f'{reddit_url}/{path}{f_json}&q={quote_plus(name)}&type=link{sort}'
+                url = f'{reddit_url}/{path}{f_json}{after}&q={quote_plus(name)}&type=link{sort}'
             elif '/' not in name:
-                if after:
-                    after_prefix = '&after='
-                    url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={name}{sort}'
-                else:
-                    url = f'{reddit_url}/{path}{f_json}&q={name}{sort}'
+                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
         elif type == 'commu':
             sort = '&type=sr'
             if after:
-                after_prefix = '&after='
-                url = f'{reddit_url}/{path}{f_json}{after_prefix}{after}&q={name}{sort}'
-            else:
                 url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
     return url
 
