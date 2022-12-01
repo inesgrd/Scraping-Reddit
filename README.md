@@ -3,11 +3,11 @@
 ## Objectives 
 This repository is made to write scripts to scrape Reddit by keywords or with an url. Different scripts can be used depeding on the necessity. There are exemples of the kind of collect it allows. This repository also allows me to get familliar with github, python and scraping : it is a work in progress.  
 
-_Scrapping Reddit from_ ;  
+*Scrapping Reddit from* ;  
 * communities :
-`* posts`
+** posts
 * users : 
-`* posts`
+** posts
 `* comments
 * search function :
 `* posts`
