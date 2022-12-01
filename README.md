@@ -5,13 +5,13 @@ This repository is made to write scripts to scrape Reddit by keywords or with an
 
 _Scrapping Reddit from_ ;  
 * communities :
-`* posts
+`* posts`
 * users : 
-`* posts
+`* posts`
 `* comments
 * search function :
-`* posts
-`* communities
+`* posts`
+`* communities`
 
 The script "script_final.py" will be used for the research projet in the master 2 D2SN at the University Gustave Eiffel.
 
