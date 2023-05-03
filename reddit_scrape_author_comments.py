@@ -1,14 +1,11 @@
 import json
 import requests
 import csv
-import urllib.request
-import time
-from pprint import pprint
 from datetime import datetime
 
 ## AUTHOR COMMENTS 
 
-user = input("Choose a username on Reddit to scrap: ")
+user = input("Choose a username on Reddit to scrape: ")
 
 after = ''
 url = f'https://www.reddit.com/user/{user}/comments.json?limit=100&sort=new'
@@ -25,7 +22,7 @@ output_CSV_header = [
     "comments_post",
     "awards_com"]
 
-with open("comments_"+user+"_scraping_reddit.csv", "w") as f:
+with open("comments_"+user+"_scrape_reddit.csv", "w") as f:
     writer = csv.DictWriter(f, fieldnames=output_CSV_header)
     writer.writeheader()
 
@@ -57,9 +54,3 @@ with open("comments_"+user+"_scraping_reddit.csv", "w") as f:
             after = "&after=" + data['data']['after']
         else:
             break
-
-
-## Author's comments
-
-#select an author -> need info 
-#karma? not in the j.son format :( => how to get it

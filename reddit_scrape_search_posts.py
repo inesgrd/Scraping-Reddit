@@ -1,14 +1,12 @@
 import json
 import requests
 import csv
-import urllib.request
-import time
-from pprint import pprint
 from datetime import datetime
+from urllib.parse import quote
 
 ## SEARCH POSTS
 
-keyword = input("Choose a keyword on Reddit to scrap: ")
+keyword = input("Choose a keyword on Reddit to scrape: ")
 
 after = ''
 url = f'https://www.reddit.com/search.json?limit=100&q={keyword}&sort=new'
@@ -28,12 +26,12 @@ output_CSV_header = [
     "awards_post",
     "domain_link_joined"]
 
-with open("search_posts_"+keyword+"_scraping_reddit.csv", "w") as f:
+with open("search_posts_"+keyword+"_scrape_reddit.csv", "w") as f:
     writer = csv.DictWriter(f, fieldnames=output_CSV_header)
     writer.writeheader()
 
     while True:
-        url = f'https://www.reddit.com/search.json?limit=100{after}&q={keyword}&sort=new'
+        url = f'https://www.reddit.com/search.json?limit=100{after}&q={quote(keyword)}&sort=new'
         headers = {'user-agent': 'r2d2'}
         response = requests.get(url + after, headers=headers)
         data = json.loads(response.text)
@@ -65,12 +63,3 @@ with open("search_posts_"+keyword+"_scraping_reddit.csv", "w") as f:
             break
 
 
-## POSTS search 
-
-#TO DO : 
-#Add a limit
-
-#Publication : ok
-#Comments : does not work, still give the publication page info
-#Community : works, keyword related to the community (idk how it does that when not mentionned in the name nor the description)
-#User : get some users but not the same between reddit search and the .json one 

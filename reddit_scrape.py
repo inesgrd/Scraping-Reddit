@@ -2,14 +2,11 @@ import json
 import requests
 import csv
 from urllib.parse import quote_plus
+from urllib.parse import quote
 from datetime import datetime
 import argparse
 import os
 
-## Pb : duplicates when the number of comments or score changes during the scrapping
-## need to clean the dataset after 
-## only with urls ?
-## find a way to say in the script ; a linkpost cannot appears twice (so do not take another the posts if already have this link?)
 
 # ------------------------------------------------#
 # PARSE THE ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -24,7 +21,7 @@ def get_args():
         user (str) : user page to scrape (indicates it is a user page to scrape)
         search (str) : search function to scrape (indicates it is the search function to scrape)
         type (str) : type of data to scrape, posts OR comments OR commu (indicates these are either posts or comments or communities to scrape)
-        name (str) : name of a community OR a user OR a keyword for a query 
+        name (str) : name of a community OR a user OR keyword.s for a query
     """
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group()
@@ -47,7 +44,6 @@ def get_args():
 
     return community, user, search, type, name
 
-community, user, search, type, name = get_args()
 
 # ------------------------------------------------#
 # VERIFY ARGUMENTS PASSED FROM THE COMMAND LINE
@@ -55,7 +51,7 @@ community, user, search, type, name = get_args()
 def test_error(community, user, search, type):
     """
     Using the command line arguments, verify their combinaison 
-    is possible to scrape data from Reddit
+    is possible to scrape data from Reddit.
 
     Reminder : 
     -> community and posts
@@ -80,15 +76,16 @@ def test_error(community, user, search, type):
             error = 'Sorry this query is impossible ! See help for a working combination, community only posible with posts'
     elif user:
         if type == 'posts' or type == 'comments':
-             error = None
+            error = None
         if type == 'commu':
             error = 'Sorry this query is impossible ! See help for a working combination, user only posible with posts OR comments'
     elif search:
         if type == 'posts' or type == 'commu':
-             error = None
+            error = None
         if type == 'comments':
             error = 'Sorry this query is impossible ! See help for a working combination, search only posible with posts OR commu'
     return error
+
 
 # ------------------------------------------------#
 # CONCATENATE A URL TO SCRAPE
@@ -133,11 +130,10 @@ def build_url(community, user, search, type, name, after):
                 name = f'url:{name}'
                 url = f'{reddit_url}/{path}{f_json}{after}&q={quote_plus(name)}&type=link{sort}'
             elif '/' not in name:
-                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+                url = f'{reddit_url}/{path}{f_json}{after}&q=({quote(name)})&t=all{sort}'
         elif type == 'commu':
             sort = '&type=sr'
-            if after:
-                url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
+            url = f'{reddit_url}/{path}{f_json}{after}&q={name}{sort}'
     return url
 
 
@@ -157,6 +153,7 @@ def output_csv(type, user):
         output_CSV_header (list) : list of column headers
     """
     output_base = [
+        "query",
         "subreddit",
         "subreddit_id",
         "link_post",
@@ -205,6 +202,12 @@ def name_csv(community, user, search, type, name):
     Using the command line arguments, customise the name of the CSV file
     that this program outputs.
 
+    Caution : 
+    -> the name of the query will appear in the csv_file_name with the arguments chosen
+    -> if the query is a url, the name of the file will be 'reddit_urls.csv',
+    be carefull to not overwrite this file if multiple request with url a done separatly
+    -> if the query is a multiple keyword search the title will have space and can be long
+
     Args:
         community (str) : community page to scrape
         user (str) : user page to scrape
@@ -225,7 +228,7 @@ def name_csv(community, user, search, type, name):
     elif search:
         if type == 'posts':
             if '/' in name:
-                csv_file_name = f'search_posts_url_scraping_reddit.csv'
+                csv_file_name = f'reddit_urls.csv'
             if '/' not in name:
                 csv_file_name = f'search_posts_{name}_scraping_reddit.csv'
         elif type == 'commu':
@@ -259,7 +262,7 @@ def scrape_page(url):
 # ------------------------------------------------#
 # CLEAN DATA
 # ------------------------------------------------#
-def clean_data(children, type, user):
+def clean_data(children, name, type, user):
     """
     Using the command line arguments and data, divise the data into 
     categories the user wants to scrape and select only the meaningfull 
@@ -277,7 +280,8 @@ def clean_data(children, type, user):
     for child in children:
         child = child['data']
         result = {
-            "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat()
+            "date_utc": datetime.utcfromtimestamp(int(child['created_utc'])).isoformat(),
+            "query": name 
         }
         if type == 'posts':
             result["subreddit"] = child["subreddit"]
@@ -338,7 +342,7 @@ def data_results(community, user, search, type, name, after):
     """
     url = build_url(community, user, search, type, name, after)
     children, after = scrape_page(url)
-    results = clean_data(children, type, user)
+    results = clean_data(children, name, type, user)
     return results, after
 
 
@@ -356,7 +360,7 @@ def main():
     csv_file_name = name_csv(community, user, search, type, name)    
     file_exist = os.path.isfile(csv_file_name)
 
-    with open(csv_file_name, "w") as f:
+    with open(csv_file_name, "a") as f:
         
         fieldnames = output_csv(type, user)
         writer = csv.DictWriter(f, fieldnames=fieldnames)

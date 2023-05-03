@@ -1,12 +1,9 @@
 import json
 import requests
 import csv
-import urllib.request
-import time
-from pprint import pprint
 from datetime import datetime
 
-## COMMUNITY POSTS
+## COMMUNITY POSTS (+keywords)
 
 community = input("Choose a community on Reddit to scrap: ")
 
@@ -63,8 +60,6 @@ with open("posts_"+community+"_scraping_reddit.csv.csv", "w") as f:
             after = "&after=" + data['data']['after']
         else:
             break
-
-
 
 
 ## Notes for developping this script : ##
