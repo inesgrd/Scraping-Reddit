@@ -1,9 +1,6 @@
 import json
 import requests
 import csv
-import urllib.request
-import time
-from pprint import pprint
 from datetime import datetime
 
 ## SEARCH COMMUNITY
@@ -53,14 +50,3 @@ with open("search_community_"+keyword+"_scraping_reddit.csv", "w") as f:
             after = "&after=" + data['data']['after']
         else:
             break
-
-
-## Reddit search 
-
-#TO DO : 
-#Add a limit
-
-#Publication : ok
-#Comments : does not work, still give the publication page info
-#Community : works, keyword related to the community (idk how it does that when not mentionned in the name nor the description)
-#User : get some users but not the same between reddit search and the .json one 
